@@ -1,0 +1,23 @@
+flask
+edge-tts
+pypdf
+python-docx
+requests
+ocrmac
+huggingface_hub
+# เสียงผู้พูด (OpenVoice) — Mac Intel ใช้ torch 2.2.2 ได้เป็นรุ่นสุดท้าย
+numpy<2
+torch==2.2.2
+torchaudio==2.2.2
+llvmlite==0.43.0
+numba==0.60.0
+librosa
+soundfile
+pydub
+unidecode
+eng_to_ipa
+inflect
+pypinyin
+cn2an
+jieba
+langid

@@ -1,0 +1,1 @@
+{"version":"0.0.1","configurations":[{"name":"doc-reader","runtimeExecutable":".venv/bin/python","runtimeArgs":["app.py"],"port":5055}]}

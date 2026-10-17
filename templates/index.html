@@ -1,0 +1,513 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>อ่านออกเสียงเอกสาร</title>
+<style>
+  :root { --bg:#f5f6f8; --card:#fff; --text:#1d2330; --muted:#6b7385; --line:#e2e5eb; --accent:#2f6fde; --danger:#c8423b; }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg:#14171c; --card:#1d2128; --text:#e8eaef; --muted:#9aa1b0; --line:#2e333d; --accent:#6c9cf0; --danger:#e3746d; }
+  }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--text); font:16px/1.55 -apple-system, "Sukhumvit Set", "Thonburi", sans-serif; }
+  main { max-width:880px; margin:0 auto; padding:24px 16px 60px; }
+  h1 { font-size:24px; margin:0 0 4px; }
+  h2 { font-size:18px; margin:0 0 12px; }
+  .sub { color:var(--muted); margin:0 0 20px; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:18px; margin-bottom:18px; }
+  .drop { border:2px dashed var(--line); border-radius:10px; padding:28px; text-align:center; cursor:pointer; color:var(--muted); }
+  .drop.over { border-color:var(--accent); color:var(--accent); }
+  .row { display:flex; flex-wrap:wrap; gap:14px; margin:12px 0; }
+  .row label { display:flex; flex-direction:column; gap:4px; font-size:14px; color:var(--muted); flex:1 1 180px; }
+  select, input[type=range], textarea { font:inherit; color:var(--text); background:var(--bg); border:1px solid var(--line); border-radius:8px; padding:8px; }
+  textarea { width:100%; min-height:200px; resize:vertical; }
+  .check { flex-direction:row !important; align-items:center; color:var(--text) !important; }
+  button { font:inherit; border:0; border-radius:8px; padding:10px 18px; background:var(--accent); color:#fff; cursor:pointer; }
+  button:disabled { opacity:.5; cursor:default; }
+  button.ghost { background:transparent; color:var(--danger); border:1px solid var(--line); padding:6px 12px; font-size:14px; }
+  .status { margin-left:10px; color:var(--muted); }
+  .err { color:var(--danger); }
+  .item { display:flex; gap:14px; padding:14px 0; border-top:1px solid var(--line); }
+  .item:first-child { border-top:0; }
+  .thumb { width:96px; height:96px; flex:0 0 96px; border-radius:8px; object-fit:cover; background:var(--bg); display:flex; align-items:center; justify-content:center; color:var(--muted); font-size:13px; border:1px solid var(--line); }
+  .body { flex:1; min-width:0; }
+  .meta { font-size:13px; color:var(--muted); }
+  .snippet { font-size:14px; margin:4px 0 8px; overflow:hidden; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; }
+  audio { width:100%; }
+  .links a { font-size:14px; margin-right:12px; color:var(--accent); }
+  #preview img { max-width:100%; max-height:260px; border-radius:8px; display:block; margin-bottom:10px; }
+  .hidden { display:none; }
+  input[type=text] { font:inherit; color:var(--text); background:var(--bg); border:1px solid var(--line); border-radius:8px; padding:8px; }
+  .script { background:var(--bg); border-radius:8px; padding:12px 14px; font-size:15px; margin:8px 0 12px; }
+  .recbar { display:flex; flex-wrap:wrap; align-items:center; gap:10px; margin:10px 0; }
+  button.rec { background:var(--danger); }
+  button.alt { background:transparent; color:var(--accent); border:1px solid var(--line); }
+  .timer { font-variant-numeric:tabular-nums; color:var(--muted); }
+  .vitem { display:flex; flex-wrap:wrap; align-items:center; gap:10px; padding:10px 0; border-top:1px solid var(--line); }
+  .vitem audio { flex:1 1 220px; height:36px; }
+  .export { border:1px solid var(--line); border-radius:10px; padding:12px 14px; margin-bottom:12px; }
+  .export input[type=text] { width:100%; }
+  .exrow { font-size:14px; padding:4px 0; border-top:1px solid var(--line); display:flex; gap:8px; align-items:baseline; }
+  .exrow a { color:var(--accent); cursor:pointer; margin-left:auto; white-space:nowrap; }
+  .modes { display:flex; flex-wrap:wrap; gap:10px; }
+  .mode { flex:1 1 240px; display:flex; gap:10px; align-items:flex-start; border:1px solid var(--line); border-radius:10px; padding:10px 12px; cursor:pointer; }
+  .mode small { color:var(--muted); }
+  .job { border:1px solid var(--line); border-radius:10px; padding:12px; margin-bottom:12px; }
+  .jobhead { display:flex; align-items:center; gap:12px; }
+  .jobhead .thumb { width:56px; height:56px; flex-basis:56px; }
+  .jobhead .name { flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .badge { font-size:13px; padding:2px 10px; border-radius:20px; background:var(--bg); color:var(--muted); white-space:nowrap; }
+  .badge.ok { color:#1f8a4c; } .badge.err { color:var(--danger); } .badge.busy { color:var(--accent); }
+  .qa { width:100%; border-collapse:collapse; margin-top:10px; font-size:15px; }
+  .qa td { padding:4px; vertical-align:top; }
+  .qa td.n { width:2.2em; color:var(--muted); padding-top:10px; }
+  .qa input { width:100%; font:inherit; color:var(--text); background:var(--bg); border:1px solid var(--line); border-radius:6px; padding:6px 8px; }
+  .job textarea { margin-top:10px; min-height:140px; }
+  body.mode-full .ws-only, body.mode-worksheet .full-only { display:none; }
+  @media (max-width:600px) { .qa tr { display:flex; flex-wrap:wrap; } .qa td { flex:1 1 100%; } .qa td.n { flex:0 0 auto; padding-top:4px; } }
+</style>
+</head>
+<body>
+<main>
+  <h1>อ่านออกเสียงเอกสาร</h1>
+  <p class="sub">อัปโหลด PDF, Word, ไฟล์ข้อความ หรือรูปภาพ เลือกภาษา แล้วให้อ่านออกเสียง ระบบจะบันทึกเสียงไว้คู่กับไฟล์ต้นฉบับ</p>
+
+  <section class="card">
+    <h2>เสียงของฉัน</h2>
+    <p class="meta">อัดเสียงตัวเองครั้งเดียว ในที่เงียบ ๆ ให้ปากห่างไมค์ประมาณหนึ่งคืบ พูดต่อเนื่อง 30–60 วินาที (ช่วงเงียบจะถูกตัดออก ต้องเหลือเสียงพูดอย่างน้อย 10 วินาที) ยิ่งยาวและชัด เสียงยิ่งเหมือน จากนั้นเลือก "เสียงของฉัน" ตอนอ่านเอกสารได้เลย</p>
+    <div class="script">ลองอ่านข้อความนี้ด้วยน้ำเสียงปกติ: “สวัสดีครับ วันนี้อากาศดีมาก ผมกำลังอัดเสียงของตัวเองเพื่อให้โปรแกรมจำเสียงได้ ผมจะอ่านช้า ๆ และชัดเจน หนึ่ง สอง สาม สี่ ห้า หก เจ็ด แปด เก้า สิบ เมื่อวานผมไปเดินเล่นที่สวนสาธารณะ เห็นต้นไม้สีเขียวและดอกไม้หลากสี ผู้คนมาออกกำลังกายกันมากมาย”</div>
+    <div class="row">
+      <label>ชื่อเสียง <input type="text" id="vName" placeholder="เช่น เสียงของผม"></label>
+    </div>
+    <div class="recbar">
+      <button id="recBtn" class="rec">● เริ่มอัดเสียง</button>
+      <span class="timer" id="recTime"></span>
+      <button id="pickBtn" class="alt">หรือเลือกไฟล์เสียง</button>
+      <input type="file" id="vFile" class="hidden" accept="audio/*,.m4a,.mp3,.wav">
+    </div>
+    <audio id="recPreview" controls class="hidden"></audio>
+    <div class="row">
+      <label class="check"><input type="checkbox" id="consent"> ยืนยันว่านี่คือเสียงของฉันเอง หรือได้รับอนุญาตจากเจ้าของเสียงแล้ว</label>
+    </div>
+    <button id="saveVoice" disabled>บันทึกเสียงนี้</button><span id="vStatus" class="status"></span>
+    <div id="voiceList" style="margin-top:12px"></div>
+  </section>
+
+  <section class="card">
+    <h2>1. อัปโหลดไฟล์ (เลือกได้หลายไฟล์)</h2>
+    <div class="drop" id="drop">ลากไฟล์หรือทั้งโฟลเดอร์มาวางที่นี่ หรือคลิกเพื่อเลือกไฟล์<br><small>PDF · DOCX · TXT · PNG · JPG · WEBP — โฟลเดอร์ย่อยจะถูกค้นให้ทั้งหมด</small></div>
+    <input type="file" id="file" class="hidden" multiple accept=".pdf,.docx,.txt,.md,.csv,.png,.jpg,.jpeg,.webp,.bmp,.tif,.tiff,.gif">
+    <input type="file" id="folder" class="hidden" webkitdirectory multiple>
+    <div class="recbar">
+      <button id="folderBtn" class="alt">📁 เลือกทั้งโฟลเดอร์</button>
+      <label class="check"><input type="checkbox" id="skipDone" checked> ข้ามรูปที่มีวิดีโอในโฟลเดอร์ ex แล้ว</label>
+    </div>
+    <p id="upStatus" class="status"></p>
+  </section>
+
+  <section class="card hidden" id="step2">
+    <h2>2. ตั้งค่าการอ่าน</h2>
+    <div class="modes">
+      <label class="mode"><input type="radio" name="mode" value="worksheet" checked>
+        <span><strong>แบบฝึกหัดทีละข้อ</strong><br><small>อ่านโจทย์ภาษาไทย เว้นจังหวะให้คิด แล้วอ่านคำตอบเป็นภาษาที่เลือก</small></span></label>
+      <label class="mode"><input type="radio" name="mode" value="full">
+        <span><strong>อ่านข้อความทั้งหมด</strong><br><small>อ่านทุกอย่างในไฟล์ต่อกันไป</small></span></label>
+    </div>
+    <div class="row">
+      <label><span id="langLabel">ภาษาของคำตอบ</span>
+        <select id="lang">
+          {% for code, l in languages.items() %}<option value="{{ code }}"{% if code == "en" %} selected{% endif %}>{{ l[0] }}</option>{% endfor %}
+        </select>
+      </label>
+      <label>เสียงที่ใช้อ่าน
+        <select id="voiceSel"><option value="">เสียงสำเร็จรูป</option></select>
+      </label>
+      <label id="genderBox">เพศของเสียง
+        <select id="gender"><option value="female">ผู้หญิง</option><option value="male">ผู้ชาย</option></select>
+      </label>
+      <label>ความเร็ว <span id="rateVal">ปกติ</span>
+        <input type="range" id="rate" min="-50" max="100" step="10" value="0">
+      </label>
+    </div>
+    <div class="row ws-only">
+      <label>เว้นจังหวะให้คิดก่อนเฉลย <span id="pauseVal">3 วินาที</span>
+        <input type="range" id="pause" min="0" max="10" step="1" value="3">
+      </label>
+      <label class="check"><input type="checkbox" id="readQ" checked> อ่านโจทย์ภาษาไทยก่อน</label>
+    </div>
+    <div class="row full-only">
+      <label class="check"><input type="checkbox" id="translate"> แปลข้อความเป็นภาษาที่เลือกก่อนอ่าน</label>
+    </div>
+    <p class="meta" id="voiceNote"></p>
+  </section>
+
+  <section class="card hidden" id="step3">
+    <h2>3. ตรวจข้อความแล้วสร้างเสียง</h2>
+    <div id="jobs"></div>
+    <div class="recbar">
+      <button id="runAll">สร้างเสียงทั้งหมด</button><span id="runStatus" class="status"></span>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>รายการที่บันทึกไว้</h2>
+    <div class="export">
+      <div class="row">
+        <label>โฟลเดอร์ที่เก็บรูปต้นฉบับ (ค้นหาโฟลเดอร์ย่อยให้อัตโนมัติ)
+          <input type="text" id="exportRoot" placeholder="~/Downloads">
+        </label>
+      </div>
+      <div class="row">
+        <label class="check"><input type="checkbox" id="removeAfter" checked> บันทึกเสร็จแล้วลบออกจากรายการนี้</label>
+      </div>
+      <button id="exportBtn">⬇ บันทึกวิดีโอทั้งหมดลงโฟลเดอร์ ex</button><span id="exStatus" class="status"></span>
+      <p class="meta">วิดีโอจะถูกบันทึกในโฟลเดอร์ <b>ex</b> ข้างรูปต้นฉบับ ตั้งชื่อตามรูป เช่น L1SPhoto Unit46/ex/46.1.mp4 (ถ้ามีไฟล์ชื่อเดิมอยู่แล้วจะแทนที่ด้วยอันล่าสุด)</p>
+      <div id="exResults"></div>
+    </div>
+    <div id="library"><p class="meta">ยังไม่มีรายการ</p></div>
+  </section>
+</main>
+
+<script>
+const $ = id => document.getElementById(id);
+let jobs = [], nextId = 1, running = false;
+const LANG_NAMES = Object.fromEntries([...$("lang").options].map(o => [o.value, o.textContent]));
+const mode = () => document.querySelector('input[name=mode]:checked').value;
+
+const drop = $("drop"), fileInput = $("file");
+drop.onclick = () => fileInput.click();
+drop.ondragover = e => { e.preventDefault(); drop.classList.add("over"); };
+drop.ondragleave = () => drop.classList.remove("over");
+drop.ondrop = e => { e.preventDefault(); drop.classList.remove("over"); entriesFromDrop(e.dataTransfer).then(addFiles); };
+fileInput.onchange = () => { addFiles([...fileInput.files].map(f => ({ file: f, path: f.name }))); fileInput.value = ""; };
+$("folderBtn").onclick = () => $("folder").click();
+$("folder").onchange = () => {
+  addFiles([...$("folder").files].map(f => ({ file: f, path: f.webkitRelativePath || f.name })));
+  $("folder").value = "";
+};
+
+// ลากโฟลเดอร์มาวาง: ไล่อ่านไฟล์ในโฟลเดอร์ย่อยทั้งหมด (ต้องเรียก webkitGetAsEntry ก่อน await แรก)
+async function entriesFromDrop(dt) {
+  const roots = [...dt.items].map(i => i.webkitGetAsEntry && i.webkitGetAsEntry()).filter(Boolean);
+  if (!roots.length) return [...dt.files].map(f => ({ file: f, path: f.name }));
+  const out = [];
+  const walk = async (entry, prefix) => {
+    if (entry.isFile) {
+      const file = await new Promise((res, rej) => entry.file(res, rej));
+      out.push({ file, path: prefix + file.name });
+    } else if (entry.isDirectory) {
+      const reader = entry.createReader();
+      for (;;) {
+        const batch = await new Promise((res, rej) => reader.readEntries(res, rej));
+        if (!batch.length) break;
+        for (const e of batch) await walk(e, prefix + entry.name + "/");
+      }
+    }
+  };
+  for (const r of roots) await walk(r, "");
+  return out;
+}
+
+$("rate").oninput = e => { const v = +e.target.value; $("rateVal").textContent = v === 0 ? "ปกติ" : (v > 0 ? "+" : "") + v + "%"; };
+$("pause").oninput = e => { $("pauseVal").textContent = e.target.value + " วินาที"; };
+document.querySelectorAll('input[name=mode]').forEach(r => r.onchange = applyMode);
+$("lang").onchange = () => { jobs.forEach(j => j.items && translateJob(j)); };
+
+function setStatus(el, msg, err) { el.textContent = msg; el.className = "status" + (err ? " err" : ""); }
+
+function applyMode() {
+  const m = mode();
+  if ($("voiceSel").onchange) $("voiceSel").onchange();
+  document.body.className = "mode-" + m;
+  $("langLabel").textContent = m === "worksheet" ? "ภาษาของคำตอบ" : "ภาษาที่จะอ่านออกเสียง";
+  jobs.forEach(renderBody);
+}
+
+// ---------- คิวไฟล์ ----------
+const ACCEPT = /\.(pdf|docx|txt|md|csv|png|jpe?g|webp|bmp|tiff?|gif)$/i;
+const IN_EX = /(^|\/)ex\//i;
+let extracting = false;
+
+async function addFiles(entries) {
+  // ข้ามไฟล์ซ่อน (.DS_Store) และไฟล์ในโฟลเดอร์ ex
+  const all = entries.filter(e => !e.path.split("/").some(part => part.startsWith(".")));
+  const hasVideo = new Set(all.filter(e => IN_EX.test(e.path) && /\.mp4$/i.test(e.path))
+    .map(e => e.path.replace(/(^|\/)ex\/([^/]+)\.mp4$/i, "$1$2").toLowerCase()));
+  const known = new Set(jobs.map(j => j.path));
+  let files = all.filter(e => ACCEPT.test(e.path) && !IN_EX.test(e.path) && !known.has(e.path));
+  const before = files.length;
+  if ($("skipDone").checked) files = files.filter(e => !hasVideo.has(e.path.replace(/\.[^.]+$/, "").toLowerCase()));
+  const skipped = before - files.length;
+  files.sort((a, b) => a.path.localeCompare(b.path, undefined, { numeric: true }));
+  setStatus($("upStatus"), `เพิ่ม ${files.length} ไฟล์` + (skipped ? ` · ข้าม ${skipped} ไฟล์ที่มีวิดีโอใน ex แล้ว` : "")
+    + (!files.length && !skipped ? " — ไม่พบไฟล์ที่รองรับ" : ""), !files.length && !skipped);
+  if (!files.length) return;
+  for (const { file, path } of files) {
+    const job = { id: nextId++, file, path, status: "reading" };
+    jobs.push(job);
+    renderJob(job);
+  }
+  $("step2").classList.remove("hidden"); $("step3").classList.remove("hidden");
+  // อ่านข้อความทีละไฟล์ตามลำดับ (มีตัวทำงานเดียว แม้จะเพิ่มไฟล์ระหว่างที่กำลังอ่าน)
+  if (extracting) return;
+  extracting = true;
+  for (let job; (job = jobs.find(j => j.status === "reading")); ) { job.status = "extracting"; await extractJob(job); }
+  extracting = false;
+  // ถ้าไม่มีไฟล์ไหนเป็นแบบฝึกหัดที่มีเลขข้อ ให้เปลี่ยนเป็นโหมดอ่านทั้งหมด
+  if (jobs.every(j => !j.items || !j.items.length) && mode() === "worksheet") {
+    document.querySelector('input[value=full]').checked = true; applyMode();
+  }
+}
+
+async function extractJob(job) {
+  const fd = new FormData(); fd.append("file", job.file); fd.append("relpath", job.path);
+  try {
+    const r = await fetch("/api/extract", { method: "POST", body: fd });
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.error);
+    job.data = d; job.text = d.text;
+    job.items = d.items.map(i => ({ ...i, dst: "" }));
+    setJob(job, "ready", d.items.length ? `พบ ${d.items.length} ข้อ` : "อ่านข้อความแล้ว");
+    renderBody(job);
+    if (job.items.length) await translateJob(job);
+  } catch (e) { setJob(job, "error", e.message); }
+}
+
+async function translateJob(job) {
+  if (!job.items || !job.items.length) return;
+  const lang = $("lang").value;
+  setJob(job, "busy", "กำลังแปลคำตอบ …");
+  try {
+    const r = await fetch("/api/translate-items", { method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ lang, items: job.items.map(i => i.src) }) });
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.error);
+    job.items.forEach((it, k) => it.dst = d.items[k] || "");
+    setJob(job, "ready", `พบ ${job.items.length} ข้อ · คำตอบ: ${LANG_NAMES[lang]} (แก้ไขได้)`);
+    renderBody(job);
+  } catch (e) { setJob(job, "error", e.message); }
+}
+
+function renderJob(job) {
+  const el = document.createElement("div");
+  el.className = "job"; el.id = "job" + job.id;
+  const isImg = job.file.type.startsWith("image/");
+  el.innerHTML = `<div class="jobhead">
+      ${isImg ? `<img class="thumb" src="${URL.createObjectURL(job.file)}" alt="">` : `<div class="thumb">${esc(job.file.name.split(".").pop().toUpperCase())}</div>`}
+      <div class="name"><strong>${esc(job.file.name)}</strong>${job.path.includes("/") ? `<br><small class="meta">${esc(job.path.replace(/\/[^/]+$/, ""))}</small>` : ""}</div>
+      <span class="badge busy">กำลังอ่านข้อความ …</span>
+      <button class="ghost" title="เอาออกจากรายการ">✕</button></div><div class="jobbody"></div>`;
+  el.querySelector(".ghost").onclick = () => {
+    if (job.status === "working" || job.status === "extracting") return;
+    jobs = jobs.filter(j => j !== job); el.remove();
+    if (!jobs.length) { $("step2").classList.add("hidden"); $("step3").classList.add("hidden"); }
+  };
+  $("jobs").append(el);
+}
+
+function setJob(job, status, msg) {
+  if (status !== "busy") job.status = status;
+  const b = document.querySelector(`#job${job.id} .badge`);
+  if (!b) return;
+  b.textContent = msg;
+  b.className = "badge " + ({ done: "ok", error: "err", busy: "busy", working: "busy", queued: "busy" }[status] || "");
+}
+
+function renderBody(job) {
+  const body = document.querySelector(`#job${job.id} .jobbody`);
+  if (!body || !job.data) return;
+  body.innerHTML = "";
+  if (mode() === "worksheet") {
+    if (!job.items.length) { body.innerHTML = '<p class="meta">ไม่พบข้อที่มีเลขกำกับ (เช่น "1. ...") ในไฟล์นี้ ลองใช้โหมด "อ่านข้อความทั้งหมด"</p>'; return; }
+    const t = document.createElement("table"); t.className = "qa";
+    job.items.forEach(it => {
+      const tr = document.createElement("tr");
+      tr.innerHTML = `<td class="n">${it.n}.</td><td><input data-k="src"></td><td><input data-k="dst" placeholder="คำตอบ"></td>`;
+      tr.querySelectorAll("input").forEach(inp => { inp.value = it[inp.dataset.k]; inp.oninput = () => it[inp.dataset.k] = inp.value; });
+      t.append(tr);
+    });
+    body.append(t);
+  } else {
+    const ta = document.createElement("textarea");
+    ta.value = job.text; ta.oninput = () => job.text = ta.value;
+    body.append(ta);
+  }
+}
+
+// ---------- สร้างเสียงทีละไฟล์ ----------
+$("runAll").onclick = async () => {
+  if (running) return;
+  const todo = jobs.filter(j => j.data && j.status !== "done");
+  if (!todo.length) { setStatus($("runStatus"), "ไม่มีไฟล์ที่รอสร้างเสียง", true); return; }
+  running = true; $("runAll").disabled = true;
+  todo.forEach(j => setJob(j, "queued", "รอคิว"));
+  const own = !!$("voiceSel").value;
+  let ok = 0;
+  for (const [k, job] of todo.entries()) {
+    setStatus($("runStatus"), `กำลังทำไฟล์ที่ ${k + 1} จาก ${todo.length}` + (own ? " (เสียงของคุณใช้เวลานานกว่า)" : ""));
+    try {
+      // คำตอบที่ยังแปลไม่สำเร็จ (เช่นโดน Google จำกัดจำนวนครั้ง) ลองแปลใหม่ก่อน
+      if (mode() === "worksheet" && job.items.length && job.items.some(i => !i.dst.trim())) {
+        await translateJob(job);
+        if (job.items.some(i => !i.dst.trim())) throw new Error("ยังแปลคำตอบไม่ครบ ลองกดสร้างเสียงอีกครั้งในอีกสักครู่");
+      }
+      setJob(job, "working", "กำลังสร้างเสียง …");
+      const r = await fetch("/api/speak", { method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...job.data, mode: mode(), text: job.text, items: job.items,
+          lang: $("lang").value, gender: $("gender").value, voice_id: $("voiceSel").value, rate: +$("rate").value,
+          translate: $("translate").checked, pause: +$("pause").value, read_question: $("readQ").checked }) });
+      const d = await r.json();
+      if (!r.ok) throw new Error(d.error);
+      setJob(job, "done", "บันทึกแล้ว ✓"); ok++;
+      await loadLibrary();
+    } catch (e) { setJob(job, "error", e.message); }
+  }
+  setStatus($("runStatus"), `เสร็จแล้ว ${ok} จาก ${todo.length} ไฟล์ ดูได้ที่ "รายการที่บันทึกไว้" ด้านล่าง`, ok < todo.length);
+  running = false; $("runAll").disabled = false;
+};
+applyMode();
+
+function esc(s) { return String(s).replace(/[&<>"]/g, c => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;" }[c])); }
+
+async function loadLibrary() {
+  const { items } = await (await fetch("/api/library")).json();
+  const box = $("library");
+  if (!items.length) { box.innerHTML = '<p class="meta">ยังไม่มีรายการ</p>'; return; }
+  box.innerHTML = items.map(it => {
+    const src = it.source ? it.files[it.source] : "";
+    const thumb = it.is_image ? `<img class="thumb" src="${src}" alt="">` : `<div class="thumb">${esc((it.source || "").split(".").pop().toUpperCase())}</div>`;
+    return `<div class="item">${thumb}<div class="body">
+      <div><strong>${esc(it.original)}</strong></div>
+      <div class="meta">${esc(it.language)}${it.translated ? " (แปลแล้ว)" : ""}${it.mode === "worksheet" ? " · แบบฝึกหัด " + it.items + " ข้อ" : ""}${it.speaker ? " · เสียง: " + esc(it.speaker) : ""} · ${esc(it.created.replace("T", " "))}</div>
+      <div class="snippet">${esc(it.text)}</div>
+      <audio controls preload="none" src="${it.files["audio.mp3"]}"></audio>
+      <div class="links">
+        <a href="${it.files["audio.mp3"]}" download>ดาวน์โหลดเสียง</a>
+        ${src ? `<a href="${src}" target="_blank">ไฟล์ต้นฉบับ</a>` : ""}
+        ${it.files["video.mp4"] ? `<a href="${it.files["video.mp4"]}" download>วิดีโอ (รูป+เสียง)</a>` : ""}
+        <a href="${it.files["text.txt"]}" target="_blank">ข้อความ</a>
+        <button class="ghost" data-del="${esc(it.id)}">ลบ</button>
+      </div></div></div>`;
+  }).join("");
+  box.querySelectorAll("[data-del]").forEach(b => b.onclick = async () => {
+    if (!confirm("ลบรายการนี้?")) return;
+    await fetch("/api/library/" + encodeURIComponent(b.dataset.del), { method: "DELETE" });
+    loadLibrary();
+  });
+}
+loadLibrary();
+
+// ---------- เสียงของฉัน ----------
+let recorder = null, recBlob = null, recTimer = null;
+
+$("voiceSel").onchange = () => {
+  const own = !!$("voiceSel").value;
+  $("genderBox").classList.toggle("hidden", own);
+  $("voiceNote").textContent = own ? (mode() === "worksheet"
+    ? "โจทย์ภาษาไทยอ่านด้วยเสียงสำเร็จรูป ส่วนคำตอบอ่านด้วยเสียงของคุณ"
+    : "") : "";
+};
+
+function setSample(blob, name) {
+  recBlob = blob; recBlob.fileName = name;
+  $("recPreview").src = URL.createObjectURL(blob);
+  $("recPreview").classList.remove("hidden");
+  $("saveVoice").disabled = false;
+}
+
+$("recBtn").onclick = async () => {
+  if (recorder && recorder.state === "recording") { recorder.stop(); return; }
+  let stream;
+  try { stream = await navigator.mediaDevices.getUserMedia({ audio: true }); }
+  catch (e) { setStatus($("vStatus"), "เปิดไมโครโฟนไม่ได้: " + e.message, true); return; }
+  const chunks = [];
+  recorder = new MediaRecorder(stream);
+  recorder.ondataavailable = e => chunks.push(e.data);
+  recorder.onstop = () => {
+    stream.getTracks().forEach(t => t.stop());
+    clearInterval(recTimer);
+    $("recBtn").textContent = "● อัดใหม่";
+    const type = recorder.mimeType || "audio/webm";
+    setSample(new Blob(chunks, { type }), "recording." + (type.includes("mp4") ? "m4a" : "webm"));
+  };
+  recorder.start();
+  const t0 = Date.now();
+  $("recBtn").textContent = "■ หยุดอัด";
+  recTimer = setInterval(() => {
+    const s = Math.floor((Date.now() - t0) / 1000);
+    $("recTime").textContent = "กำลังอัด " + s + " วินาที" + (s < 10 ? " (อย่างน้อย 10)" : "");
+  }, 250);
+};
+
+$("pickBtn").onclick = () => $("vFile").click();
+$("vFile").onchange = () => { const f = $("vFile").files[0]; if (f) { setSample(f, f.name); $("recTime").textContent = f.name; } };
+
+$("saveVoice").onclick = async () => {
+  const fd = new FormData();
+  fd.append("name", $("vName").value);
+  fd.append("consent", $("consent").checked ? "yes" : "no");
+  if (recBlob) fd.append("audio", recBlob, recBlob.fileName);
+  $("saveVoice").disabled = true;
+  setStatus($("vStatus"), "กำลังวิเคราะห์เสียง (ครั้งแรกอาจใช้เวลาราว 1 นาที) …");
+  try {
+    const r = await fetch("/api/voices", { method: "POST", body: fd });
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.error);
+    setStatus($("vStatus"), "บันทึกเสียงแล้ว");
+    recBlob = null; $("recPreview").classList.add("hidden"); $("recTime").textContent = ""; $("vName").value = "";
+    $("recBtn").textContent = "● เริ่มอัดเสียง";
+    await loadVoices();
+  } catch (e) { setStatus($("vStatus"), e.message, true); $("saveVoice").disabled = false; }
+};
+
+async function loadVoices() {
+  const { items } = await (await fetch("/api/voices")).json();
+  const sel = $("voiceSel"), keep = sel.value;
+  sel.innerHTML = '<option value="">เสียงสำเร็จรูป</option>' +
+    items.map(v => `<option value="${esc(v.id)}">เสียงของ: ${esc(v.name)}</option>`).join("");
+  if (items.some(v => v.id === keep)) sel.value = keep;
+  sel.onchange();
+  $("voiceList").innerHTML = items.map(v => `<div class="vitem"><strong>${esc(v.name)}</strong>
+      <span class="meta">พูดจริง ${v.seconds} วินาที${v.seconds < 20 ? " — สั้นไป แนะนำอัดใหม่ 30–60 วินาที" : ""}</span><audio controls preload="none" src="${v.sample}"></audio>
+      <button class="ghost" data-vdel="${esc(v.id)}">ลบ</button></div>`).join("");
+  $("voiceList").querySelectorAll("[data-vdel]").forEach(b => b.onclick = async () => {
+    if (!confirm("ลบเสียงนี้?")) return;
+    await fetch("/api/voices/" + encodeURIComponent(b.dataset.vdel), { method: "DELETE" });
+    loadVoices();
+  });
+}
+loadVoices();
+
+// ---------- บันทึกวิดีโอทั้งหมดลงโฟลเดอร์ ex ----------
+fetch("/api/export-config").then(r => r.json()).then(c => { $("exportRoot").value = c.export_root; });
+
+$("exportBtn").onclick = async () => {
+  $("exportBtn").disabled = true;
+  setStatus($("exStatus"), "กำลังค้นหาโฟลเดอร์และบันทึก …");
+  $("exResults").innerHTML = "";
+  try {
+    const r = await fetch("/api/export-videos", { method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ root: $("exportRoot").value, remove_after: $("removeAfter").checked }) });
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.error);
+    const ok = d.results.filter(x => x.ok).length;
+    if (d.removed) {
+      await loadLibrary();
+      // เอาไฟล์ที่ทำเสร็จแล้วออกจากคิวด้านบนด้วย
+      jobs.filter(j => j.status === "done").forEach(j => { document.getElementById("job" + j.id)?.remove(); });
+      jobs = jobs.filter(j => j.status !== "done");
+      if (!jobs.length) { $("step2").classList.add("hidden"); $("step3").classList.add("hidden"); }
+    }
+    setStatus($("exStatus"), d.results.length ? `บันทึกแล้ว ${ok} จาก ${d.results.length} วิดีโอ${d.removed ? ` · ลบออกจากรายการ ${d.removed} รายการ` : ""}` : "ยังไม่มีวิดีโอให้บันทึก", ok < d.results.length);
+    $("exResults").innerHTML = d.results.map(x => `<div class="exrow">${x.ok ? "✓" : "✕"}
+      <span>${esc(x.ok ? x.path + " (" + x.size_kb + " KB" + (x.replaced ? ", แทนที่ไฟล์เดิม" : "") + ")" : x.original + " — " + x.message)}</span>
+      ${x.ok ? `<a data-path="${esc(x.path)}">เปิดใน Finder</a>` : ""}</div>`).join("");
+    $("exResults").querySelectorAll("a[data-path]").forEach(a => a.onclick = () =>
+      fetch("/api/reveal", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ path: a.dataset.path }) }));
+  } catch (e) { setStatus($("exStatus"), e.message, true); }
+  $("exportBtn").disabled = false;
+};
+</script>
+</body>
+</html>

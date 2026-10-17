@@ -1,0 +1,7 @@
+.venv/
+uploads/
+saved/
+voices/
+models/
+__pycache__/
+config.json
